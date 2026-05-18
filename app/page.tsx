@@ -135,24 +135,13 @@ export default function Home() {
                   <Sparkles size={16} className="text-amber-500 animate-pulse" />
                 )}
               </h1>
-              <p className="text-[11px] text-zinc-450 dark:text-zinc-500 font-semibold tracking-wider uppercase">
-                Premium Dashboard
-              </p>
+
             </div>
           </div>
 
           {/* 헤더 우측 인터랙티브 컨트롤 라인 */}
           <div className="flex items-center gap-2">
-            {/* 실시간 연동 활성화 상태 뱃지 (미니멀) */}
-            {syncCode && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-green-50/60 dark:bg-green-950/20 text-green-600 dark:text-green-400 border border-green-200/40 dark:border-green-900/30 rounded-xl text-[10px] font-bold select-none">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-green-500"></span>
-                </span>
-                <span>연동 중</span>
-              </div>
-            )}
+
 
             {/* 설정 진입 톱니바퀴 버튼 */}
             <button
@@ -248,9 +237,7 @@ export default function Home() {
           <h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-1">
             등록된 할 일이 없습니다
           </h3>
-          <p className="text-xs text-zinc-400 dark:text-zinc-500 max-w-[200px]">
-            새로운 계획이나 할 일을 추가하여 오늘 하루를 완성해 보세요.
-          </p>
+
         </div>
       )}
 

@@ -12,7 +12,7 @@ export function ProgressBar({ done, total, percent }: ProgressBarProps) {
   return (
     <div className="flex flex-col gap-2 w-full">
       <div className="flex justify-between items-center text-xs font-semibold text-zinc-400 dark:text-zinc-500 tracking-wide">
-        <span>PROGRESS</span>
+
         <span className="font-mono text-zinc-600 dark:text-zinc-400 tabular-nums">
           {done} / {total} ({percent}%)
         </span>
