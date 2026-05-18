@@ -13,8 +13,18 @@ export interface Todo {
   dueDate?: string; // 지정된 기한 날짜 (format: YYYY-MM-DD)
 }
 
+export interface FixedExpense {
+  id: string;
+  text: string;
+  amount: number | null;
+  day: number; // 매월 해당 일자 (1~31, 31일의 경우 말일로 자동 보정)
+}
+
 export function useTodos() {
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [fixedExpenses, setFixedExpenses] = useState<FixedExpense[]>([]);
+  const [lastGeneratedMonth, setLastGeneratedMonth] = useState<string | null>(null);
+  
   const [isMounted, setIsMounted] = useState(false);
   const [syncCode, setSyncCode] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false); // 연동 처리 중 여부
@@ -29,6 +39,18 @@ export function useTodos() {
         setTodos(JSON.parse(savedTodos));
       }
       
+      // 로컬 고정비 데이터 불러오기
+      const savedExpenses = localStorage.getItem("fixed_expenses");
+      if (savedExpenses) {
+        setFixedExpenses(JSON.parse(savedExpenses));
+      }
+
+      // 로컬 마지막 생성 달 정보 불러오기
+      const savedGeneratedMonth = localStorage.getItem("last_generated_month");
+      if (savedGeneratedMonth) {
+        setLastGeneratedMonth(savedGeneratedMonth);
+      }
+
       // 저장된 동기화 코드 불러오기
       const savedSyncCode = localStorage.getItem("sync_code");
       if (savedSyncCode) {
@@ -53,9 +75,23 @@ export function useTodos() {
         setIsSyncing(false);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          if (data && Array.isArray(data.todos)) {
-            setTodos(data.todos);
-            localStorage.setItem("todos", JSON.stringify(data.todos));
+          if (data) {
+            if (Array.isArray(data.todos)) {
+              setTodos(data.todos);
+              localStorage.setItem("todos", JSON.stringify(data.todos));
+            }
+            if (Array.isArray(data.fixedExpenses)) {
+              setFixedExpenses(data.fixedExpenses);
+              localStorage.setItem("fixed_expenses", JSON.stringify(data.fixedExpenses));
+            }
+            if (data.lastGeneratedMonth !== undefined) {
+              setLastGeneratedMonth(data.lastGeneratedMonth);
+              if (data.lastGeneratedMonth) {
+                localStorage.setItem("last_generated_month", data.lastGeneratedMonth);
+              } else {
+                localStorage.removeItem("last_generated_month");
+              }
+            }
           }
         }
       },
@@ -94,7 +130,111 @@ export function useTodos() {
     }
   }, [syncCode]);
 
-  // 4. 기기 간 연동 비즈니스 로직
+  // 3.5 고정비 데이터 영속성 유지
+  const saveFixedExpenses = useCallback((newExpenses: FixedExpense[]) => {
+    setFixedExpenses(newExpenses);
+    try {
+      localStorage.setItem("fixed_expenses", JSON.stringify(newExpenses));
+    } catch (e) {
+      console.error("[Storage] Failed to save fixed expenses:", e);
+    }
+
+    if (syncCode) {
+      const docRef = doc(db, "todo_todo-app", syncCode);
+      setDoc(
+        docRef,
+        {
+          fixedExpenses: newExpenses,
+          updatedAt: new Date().toISOString(),
+        },
+        { merge: true }
+      ).catch((err) => {
+        console.error("[Firestore] Failed to save fixed expenses to cloud:", err);
+      });
+    }
+  }, [syncCode]);
+
+  // 4. 고정비 자동 리스트업 감지 엔진
+  useEffect(() => {
+    if (!isMounted || fixedExpenses.length === 0) return;
+
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth(); // 0~11
+    const currentDate = today.getDate();
+
+    // 이번 달의 마지막 일자 구하기
+    const lastDayOfCurrentMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+    // 자동 등록 기준 설정:
+    // 만약 오늘이 이번 달의 말일(last day)이면 -> 다음 달의 고정비를 미리 생성 (예: 오늘이 5/31이면 target은 6월)
+    // 만약 오늘이 이번 달의 말일이 아니면 -> 이번 달의 고정비가 생성되었는지 검사 (예: 오늘이 6/1이면 target은 6월)
+    let targetYear = currentYear;
+    let targetMonth = currentMonth;
+
+    if (currentDate === lastDayOfCurrentMonth) {
+      // 말일이므로 다음 달을 생성 대상으로 삼음
+      targetMonth = currentMonth + 1;
+      if (targetMonth > 11) {
+        targetMonth = 0;
+        targetYear += 1;
+      }
+    }
+
+    const targetMonthKey = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}`;
+
+    // 이미 이번 달(혹은 타겟 달)에 생성 완료했다면 스킵
+    if (lastGeneratedMonth === targetMonthKey) return;
+
+    // 등록 대상 고정비를 할일 카드로 전환
+    const newTodosToAdd: Todo[] = fixedExpenses.map((expense) => {
+      // 타겟 달의 실제 최대 일자 구하기 (31일 지정인데 해당 월이 30일까지인 경우 보정)
+      const maxDayInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+      const targetDay = Math.min(expense.day, maxDayInTargetMonth);
+
+      const dueDateString = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
+      const amountText = expense.amount !== null ? ` [${expense.amount.toLocaleString()}원]` : "";
+
+      return {
+        id: `fixed-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        text: `[고정비] ${expense.text}${amountText}`,
+        done: false,
+        createdAt: new Date().toISOString(),
+        today: false, // 나중에 할 일 목록으로 기본 등록 (필요시 끌어다 놓기 가능)
+        dueDate: dueDateString,
+      };
+    });
+
+    if (newTodosToAdd.length > 0) {
+      const updatedTodos = [...todos, ...newTodosToAdd];
+      
+      // 로컬 상태 갱신
+      setTodos(updatedTodos);
+      setLastGeneratedMonth(targetMonthKey);
+
+      // 로컬 스토리지 보존
+      localStorage.setItem("todos", JSON.stringify(updatedTodos));
+      localStorage.setItem("last_generated_month", targetMonthKey);
+
+      // 클라우드 동기화 갱신
+      if (syncCode) {
+        const docRef = doc(db, "todo_todo-app", syncCode);
+        setDoc(
+          docRef,
+          {
+            todos: updatedTodos,
+            lastGeneratedMonth: targetMonthKey,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        ).catch((err) => {
+          console.error("[Firestore] Failed to sync auto generated fixed expense todos:", err);
+        });
+      }
+    }
+  }, [isMounted, todos, fixedExpenses, lastGeneratedMonth, syncCode]);
+
+  // 5. 기기 간 연동 비즈니스 로직
 
   // 신규 동기화 연동 코드 생성 (6자리 난수)
   const generateSyncCode = useCallback(async () => {
@@ -103,9 +243,11 @@ export function useTodos() {
       const code = Math.floor(100000 + Math.random() * 900000).toString();
       const docRef = doc(db, "todo_todo-app", code);
       
-      // 현재 로컬 투두 데이터를 클라우드 초기값으로 밀어넣기
+      // 현재 로컬 데이터셋을 클라우드 초기값으로 보존
       await setDoc(docRef, {
         todos: todos,
+        fixedExpenses: fixedExpenses,
+        lastGeneratedMonth: lastGeneratedMonth,
         updatedAt: new Date().toISOString(),
         syncCode: code,
       });
@@ -119,7 +261,7 @@ export function useTodos() {
       console.error("[Firestore] Generate sync code failed:", err);
       throw err;
     }
-  }, [todos]);
+  }, [todos, fixedExpenses, lastGeneratedMonth]);
 
   // 기존 기기 연동 코드에 연결
   const connectSyncCode = useCallback(async (code: string) => {
@@ -133,9 +275,21 @@ export function useTodos() {
 
       if (docSnap.exists()) {
         const data = docSnap.data();
-        if (data && Array.isArray(data.todos)) {
-          setTodos(data.todos);
-          localStorage.setItem("todos", JSON.stringify(data.todos));
+        if (data) {
+          if (Array.isArray(data.todos)) {
+            setTodos(data.todos);
+            localStorage.setItem("todos", JSON.stringify(data.todos));
+          }
+          if (Array.isArray(data.fixedExpenses)) {
+            setFixedExpenses(data.fixedExpenses);
+            localStorage.setItem("fixed_expenses", JSON.stringify(data.fixedExpenses));
+          }
+          if (data.lastGeneratedMonth !== undefined) {
+            setLastGeneratedMonth(data.lastGeneratedMonth);
+            if (data.lastGeneratedMonth) {
+              localStorage.setItem("last_generated_month", data.lastGeneratedMonth);
+            }
+          }
         }
         setSyncCode(trimmed);
         localStorage.setItem("sync_code", trimmed);
@@ -158,7 +312,7 @@ export function useTodos() {
   }, []);
 
 
-  // 5. CRUD 핵심 인터페이스 정의
+  // 6. CRUD 핵심 인터페이스 정의
   const addTodo = useCallback((text: string) => {
     if (!text.trim()) return;
     const newTodo: Todo = {
@@ -224,13 +378,34 @@ export function useTodos() {
     saveTodos(nextTodos);
   }, [todos, saveTodos]);
 
-  // 6. 상태 연산값 가공
+
+  // 고정비 항목 CRUD
+  const addFixedExpense = useCallback((text: string, amount: number | null, day: number) => {
+    if (!text.trim()) return;
+    const newExpense: FixedExpense = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      text: text.trim(),
+      amount,
+      day: Math.max(1, Math.min(31, day)),
+    };
+    saveFixedExpenses([...fixedExpenses, newExpense]);
+  }, [fixedExpenses, saveFixedExpenses]);
+
+  const deleteFixedExpense = useCallback((id: string) => {
+    const nextExpenses = fixedExpenses.filter(e => e.id !== id);
+    saveFixedExpenses(nextExpenses);
+  }, [fixedExpenses, saveFixedExpenses]);
+
+
+  // 7. 상태 연산값 가공
   const total = todos.length;
   const done = todos.filter(t => t.done).length;
   const percent = total === 0 ? 0 : Math.round((done / total) * 100);
 
   return {
     todos: isMounted ? todos : [],
+    fixedExpenses: isMounted ? fixedExpenses : [],
+    lastGeneratedMonth,
     isMounted,
     syncCode,
     isSyncing,
@@ -245,6 +420,8 @@ export function useTodos() {
     setTodoDueDate,
     clearCompleted,
     moveTodo,
+    addFixedExpense,
+    deleteFixedExpense,
     progress: {
       total,
       done,
