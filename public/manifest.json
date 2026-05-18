@@ -3,13 +3,13 @@
   "short_name": "Todo",
   "icons": [
     {
-      "src": "icons/icon.png",
+      "src": "/icons/icon.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any maskable"
     }
   ],
-  "start_url": "index.html",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4F46E5"
