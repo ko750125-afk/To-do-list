@@ -1,0 +1,103 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
+:root {
+  /* Zinc scale */
+  --zinc-50:  #fafafa;
+  --zinc-100: #f4f4f5;
+  --zinc-200: #e4e4e7;
+  --zinc-300: #d4d4d8;
+  --zinc-400: #a1a1aa;
+  --zinc-500: #71717a;
+  --zinc-700: #3f3f46;
+  --zinc-900: #18181b;
+  --zinc-950: #09090b;
+
+  /* Semantic Variables */
+  --background:       #f8fafc;
+  --foreground:       var(--zinc-950);
+  --surface:          #ffffff;
+  --border:           var(--zinc-200);
+  --border-strong:    var(--zinc-300);
+  --text-sub:         var(--zinc-500);
+  --muted-bg:         var(--zinc-100);
+
+  /* Accent (Indigo Point) */
+  --accent:           #6366f1;
+  --accent-hover:     #4f46e5;
+  --accent-soft:      #eef2ff;
+
+  /* Destructive & Success */
+  --danger:           #ef4444;
+  --danger-soft:      #fef2f2;
+  --success:          #22c55e;
+  --success-soft:      #f0fdf4;
+
+  /* Border Radii */
+  --r-sm:   0.375rem;
+  --r:      0.5rem;
+  --r-lg:   0.75rem;
+  --r-xl:   1rem;
+
+  /* Shadow Design */
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / .04);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / .08), 0 1px 2px -1px rgb(0 0 0 / .06);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / .08), 0 2px 4px -2px rgb(0 0 0 / .05);
+  --shadow-drag: 0 16px 40px -4px rgb(0 0 0 / .18), 0 6px 16px -4px rgb(0 0 0 / .10);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background:       #09090b;
+    --foreground:       var(--zinc-50);
+    --surface:          #18181b;
+    --border:           var(--zinc-700);
+    --border-strong:    #52525b;
+    --text-sub:         var(--zinc-400);
+    --muted-bg:         #27272a;
+
+    --accent-soft:      #1e1b4b;
+    --danger-soft:      #451a03;
+    --success-soft:     #062f17;
+  }
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% -20%, #e0e7ff33 0%, transparent 70%),
+    var(--background);
+  color: var(--foreground);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
+
+/* Custom Utility Classes */
+.premium-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: all 200ms ease;
+}
+
+.premium-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}

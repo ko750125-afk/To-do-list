@@ -5,6 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>할일</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="apple-touch-icon" href="icons/icon.png">
+  <link rel="icon" type="image/png" href="icons/icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
@@ -381,6 +386,38 @@
       transition: background 150ms ease;
     }
 
+    /* ── Divider ─────────────────────────────────────────────────────────── */
+    .todo-divider {
+      display: flex;
+      align-items: center;
+      padding: 5px 4px;
+      cursor: ns-resize;
+      list-style: none;
+      touch-action: none;
+      user-select: none;
+    }
+    .todo-divider::before {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, #8b5cf6 8%, #8b5cf6 92%, transparent);
+      border-radius: 999px;
+    }
+    .divider-placeholder {
+      list-style: none;
+      height: 12px;
+      display: flex;
+      align-items: center;
+    }
+    .divider-placeholder::before {
+      content: '';
+      flex: 1;
+      height: 2px;
+      border-radius: 999px;
+      background: repeating-linear-gradient(90deg, #8b5cf6 0, #8b5cf6 6px, transparent 6px, transparent 10px);
+      opacity: 0.45;
+    }
+
     /* ── Bottom Bar ──────────────────────────────────────────────────────── */
     .bottom-bar {
       display: flex;
@@ -543,6 +580,14 @@ class TodoStore {
   }
 }
 
+// ─── Divider helpers ──────────────────────────────────────────────────────────
+
+const getDividerIndex = () => {
+  const v = localStorage.getItem('divider-index');
+  return v === null ? 0 : parseInt(v, 10);
+};
+const setDividerIndex = i => localStorage.setItem('divider-index', String(i));
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 class App {
@@ -565,7 +610,12 @@ class App {
       this.#empty.style.display = 'block';
     } else {
       this.#empty.style.display = 'none';
-      todos.forEach(t => this.#list.appendChild(this.#createCard(t)));
+      const divIdx = getDividerIndex();
+      todos.forEach((t, i) => {
+        if (i === divIdx) this.#list.appendChild(this.#createDivider());
+        this.#list.appendChild(this.#createCard(t));
+      });
+      if (divIdx >= todos.length) this.#list.appendChild(this.#createDivider());
     }
 
     const { total, done, percent } = this.#store.getProgress();
@@ -614,6 +664,12 @@ class App {
 
     actions.append(editBtn, deleteBtn);
     li.append(handle, checkbox, span, actions);
+    return li;
+  }
+
+  #createDivider() {
+    const li = document.createElement('li');
+    li.className = 'todo-divider';
     return li;
   }
 
@@ -706,6 +762,7 @@ class DragManager {
   #list;
   #onDone;
   #dragging = null;
+  #dividerDrag = null;
 
   constructor(store, list, onDone) {
     this.#store = store;
@@ -715,6 +772,9 @@ class DragManager {
 
   init() {
     this.#list.addEventListener('pointerdown', e => {
+      const divider = e.target.closest('.todo-divider');
+      if (divider) { e.preventDefault(); this.#startDivider(divider, e.clientY); return; }
+
       if (!e.target.closest('.drag-handle')) return;
       const card = e.target.closest('.todo-card');
       if (!card) return;
@@ -723,17 +783,18 @@ class DragManager {
     });
 
     document.addEventListener('pointermove', e => {
-      if (!this.#dragging) return;
-      e.preventDefault();
-      this.#move(e.clientY);
+      if (this.#dragging)    { e.preventDefault(); this.#move(e.clientY); }
+      if (this.#dividerDrag) { e.preventDefault(); this.#moveDivider(e.clientY); }
     }, { passive: false });
 
     document.addEventListener('pointerup', () => {
-      if (this.#dragging) this.#end();
+      if (this.#dragging)    this.#end();
+      if (this.#dividerDrag) this.#endDivider();
     });
 
     document.addEventListener('pointercancel', () => {
-      if (this.#dragging) this.#abort();
+      if (this.#dragging)    this.#abort();
+      if (this.#dividerDrag) this.#abortDivider();
     });
   }
 
@@ -773,7 +834,7 @@ class DragManager {
     if      (clientY < ZONE)                      window.scrollBy(0, -SPEED);
     else if (clientY > window.innerHeight - ZONE) window.scrollBy(0,  SPEED);
 
-    // 삽입 위치 계산
+    // 삽입 위치 계산 (todo-card 기준 — divider 제외)
     const cards = [...this.#list.querySelectorAll('.todo-card')];
     let insertBefore = null;
     for (const c of cards) {
@@ -789,7 +850,10 @@ class DragManager {
     const { id, ghost, placeholder } = this.#dragging;
     this.#dragging = null;
 
-    const newIndex = [...this.#list.children].indexOf(placeholder);
+    // divider가 섞여 있으므로 todo-card 기준으로 인덱스 계산
+    const children = [...this.#list.children];
+    const pIdx = children.indexOf(placeholder);
+    const newIndex = children.slice(0, pIdx).filter(el => el.classList.contains('todo-card')).length;
     ghost.remove();
     placeholder.remove();
 
@@ -800,6 +864,63 @@ class DragManager {
   #abort() {
     const { ghost, placeholder } = this.#dragging;
     this.#dragging = null;
+    ghost.remove();
+    placeholder.remove();
+    this.#onDone();
+  }
+
+  #startDivider(divider, clientY) {
+    const rect = divider.getBoundingClientRect();
+
+    const ghost = document.createElement('li');
+    ghost.className = 'todo-divider';
+    ghost.style.cssText = `position:fixed;top:${rect.top}px;left:${rect.left}px;width:${rect.width}px;pointer-events:none;z-index:9999;opacity:0.7;`;
+    document.body.appendChild(ghost);
+
+    const placeholder = document.createElement('li');
+    placeholder.className = 'divider-placeholder';
+    divider.replaceWith(placeholder);
+
+    this.#dividerDrag = { ghost, placeholder, offsetY: clientY - rect.top };
+  }
+
+  #moveDivider(clientY) {
+    const { ghost, placeholder, offsetY } = this.#dividerDrag;
+    ghost.style.top = `${clientY - offsetY}px`;
+
+    const ZONE = 80, SPEED = 6;
+    if      (clientY < ZONE)                      window.scrollBy(0, -SPEED);
+    else if (clientY > window.innerHeight - ZONE) window.scrollBy(0,  SPEED);
+
+    const cards = [...this.#list.querySelectorAll('.todo-card')];
+    let insertBefore = null;
+    for (const c of cards) {
+      const { top, height } = c.getBoundingClientRect();
+      if (clientY < top + height / 2) { insertBefore = c; break; }
+    }
+
+    if (insertBefore) this.#list.insertBefore(placeholder, insertBefore);
+    else              this.#list.appendChild(placeholder);
+  }
+
+  #endDivider() {
+    const { ghost, placeholder } = this.#dividerDrag;
+    this.#dividerDrag = null;
+
+    const children = [...this.#list.children];
+    const pIdx = children.indexOf(placeholder);
+    const newIndex = children.slice(0, pIdx).filter(el => el.classList.contains('todo-card')).length;
+
+    ghost.remove();
+    placeholder.remove();
+
+    setDividerIndex(newIndex);
+    this.#onDone();
+  }
+
+  #abortDivider() {
+    const { ghost, placeholder } = this.#dividerDrag;
+    this.#dividerDrag = null;
     ghost.remove();
     placeholder.remove();
     this.#onDone();
