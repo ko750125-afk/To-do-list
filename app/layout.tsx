@@ -10,8 +10,25 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "할일 - Premium Todo List",
-  description: "시니어 감성의 모던하고 세련된 할 일 관리 대시보드",
+  description: "시니어 감성의 모던하고 세련된 할 일 관리 대시보드 및 모바일 기기 실시간 동기화 서비스",
   manifest: "/manifest.json",
+  metadataBase: new URL("https://todo-premium.vercel.app"),
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: "할일 - Premium Todo List",
+    description: "시니어 감성의 모던하고 세련된 할 일 관리 대시보드 및 모바일 기기 실시간 동기화 서비스",
+    url: "https://todo-premium.vercel.app",
+    siteName: "할일",
+    locale: "ko_KR",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "할일 - Premium Todo List",
+    description: "시니어 감성의 모던하고 세련된 할 일 관리 대시보드 및 모바일 기기 실시간 동기화 서비스",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -27,6 +44,22 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "할일 - Premium Todo List",
+  "description": "시니어 감성의 모던하고 세련된 할 일 관리 대시보드 및 모바일 기기 실시간 동기화 서비스",
+  "url": "https://todo-premium.vercel.app",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "All",
+  "browserRequirements": "Requires JavaScript. Requires HTML5.",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "KRW"
+  }
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -37,7 +70,13 @@ export default function RootLayout({
       lang="ko"
       className={`${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
