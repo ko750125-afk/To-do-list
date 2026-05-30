@@ -16,6 +16,9 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  verification: {
+    google: "-flYc7eFAYr8wMg0uS1ERJe5TzFg5ezHTfaoPvP5fUQ",
+  },
   openGraph: {
     title: "할일 - Premium Todo List",
     description: "시니어 감성의 모던하고 세련된 할 일 관리 대시보드 및 모바일 기기 실시간 동기화 서비스",
