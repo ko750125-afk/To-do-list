@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({
@@ -79,6 +80,20 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         {children}
+        {/* AddToAny Share Buttons */}
+        <footer className="a2a-footer">
+          <div className="a2a_kit a2a_kit_size_32 a2a_default_style">
+            <a className="a2a_dd" href="https://www.addtoany.com/share"></a>
+            <a className="a2a_button_telegram"></a>
+            <a className="a2a_button_kakao"></a>
+            <a className="a2a_button_threads"></a>
+            <a className="a2a_button_line"></a>
+          </div>
+          <Script
+            src="https://static.addtoany.com/menu/page.js"
+            strategy="lazyOnload"
+          />
+        </footer>
       </body>
     </html>
   );

@@ -101,3 +101,43 @@ body {
   border-color: var(--border-strong);
   box-shadow: var(--shadow-md);
 }
+
+/* ── AddToAny Share Footer ── */
+.a2a-footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -2px 16px 0 rgb(0 0 0 / .06);
+}
+
+@media (prefers-color-scheme: dark) {
+  .a2a-footer {
+    background: rgba(24, 24, 27, 0.88);
+    box-shadow: 0 -2px 16px 0 rgb(0 0 0 / .28);
+  }
+}
+
+.a2a-footer .a2a_kit {
+  gap: 6px;
+}
+
+.a2a-footer .a2a_kit a {
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+.a2a-footer .a2a_kit a:hover {
+  transform: translateY(-2px);
+  opacity: 0.85;
+}
