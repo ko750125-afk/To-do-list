@@ -15,7 +15,10 @@ import {
   Copy, 
   RefreshCw, 
   LogOut, 
-  Check 
+  Check,
+  Share2,
+  Link,
+  MessageCircle
 } from "lucide-react";
 
 export default function Home() {
@@ -57,6 +60,10 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const [connectError, setConnectError] = useState("");
 
+  // 공유 메뉴 및 공유 링크 복사 상태
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
   const handleDragStart = (e: React.DragEvent<HTMLLIElement>, id: string) => {
     setDraggingId(id);
     e.dataTransfer.effectAllowed = "move";
@@ -77,6 +84,42 @@ export default function Home() {
     navigator.clipboard.writeText(syncCode);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleCopyShareLink = () => {
+    const shareUrl = typeof window !== "undefined" ? window.location.href : "https://todo-premium.vercel.app";
+    navigator.clipboard.writeText(shareUrl);
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+  };
+
+  const handleKakaoShare = () => {
+    const shareUrl = typeof window !== "undefined" ? window.location.href : "https://todo-premium.vercel.app";
+    const shareTitle = "할일 - Premium Todo List";
+    const url = `https://sharer.kakao.com/talk/friends/picker/link?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(shareTitle)}`;
+    window.open(url, "_blank", "width=450,height=600,resizable=yes");
+  };
+
+  const handleSnsShare = async () => {
+    const shareUrl = typeof window !== "undefined" ? window.location.href : "https://todo-premium.vercel.app";
+    const shareTitle = "할일 - Premium Todo List";
+    const shareText = "시니어 감성의 모던하고 세련된 할 일 관리 대시보드 및 실시간 동기화 서비스";
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (err) {
+        console.error("Web Share failed:", err);
+      }
+    } else {
+      // Fallback: Twitter share
+      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle + " - " + shareText)}&url=${encodeURIComponent(shareUrl)}`;
+      window.open(twitterUrl, "_blank", "width=600,height=400");
+    }
   };
 
   const handleConnect = async () => {
@@ -256,6 +299,73 @@ export default function Home() {
           </button>
         </div>
       )}
+
+      {/* 4.5 Custom Share Button and Popover */}
+      <div className="flex flex-col items-center justify-center mt-4 mb-6 relative">
+        <button
+          onClick={() => setShowShareMenu(!showShareMenu)}
+          className="flex items-center gap-2 px-4.5 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-bold text-xs rounded-xl cursor-pointer hover:shadow-sm active:scale-95 transition-all duration-150"
+        >
+          <Share2 size={13} className="text-zinc-500 dark:text-zinc-400" />
+          <span>공유하기</span>
+        </button>
+
+        {showShareMenu && (
+          <>
+            {/* Click outside to close */}
+            <div 
+              className="fixed inset-0 z-20 cursor-default" 
+              onClick={() => setShowShareMenu(false)} 
+            />
+            
+            {/* Share options popover */}
+            <div className="absolute bottom-full mb-3.5 z-30 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800 p-3 rounded-2xl shadow-xl flex gap-3.5 share-popover-animate select-none">
+              {/* 카카오 공유 */}
+              <button
+                onClick={() => {
+                  handleKakaoShare();
+                  setShowShareMenu(false);
+                }}
+                className="flex flex-col items-center gap-1.5 p-1 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer active:scale-95 transition-all w-16"
+              >
+                <div className="w-10 h-10 rounded-full bg-[#FEE500] text-[#3A1D1D] flex items-center justify-center shadow-xs">
+                  <svg viewBox="0 0 24 24" className="w-4.5 h-4.5 fill-current">
+                    <path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.68 2.531-.777 2.89-.12.449.148.443.31.333.128-.088 2.023-1.378 2.848-1.939.439.096.892.148 1.349.148 4.97 0 9-3.186 9-7.116C21 6.185 16.97 3 12 3z" />
+                  </svg>
+                </div>
+                <span className="text-[10px] font-bold text-zinc-650 dark:text-zinc-400">카카오톡</span>
+              </button>
+
+              {/* 메시지 / SNS */}
+              <button
+                onClick={() => {
+                  handleSnsShare();
+                  setShowShareMenu(false);
+                }}
+                className="flex flex-col items-center gap-1.5 p-1 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer active:scale-95 transition-all w-16"
+              >
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-xs">
+                  <MessageCircle size={16} strokeWidth={2.3} />
+                </div>
+                <span className="text-[10px] font-bold text-zinc-650 dark:text-zinc-400">메시지/SNS</span>
+              </button>
+
+              {/* 링크 복사 */}
+              <button
+                onClick={handleCopyShareLink}
+                className="flex flex-col items-center gap-1.5 p-1 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/40 cursor-pointer active:scale-95 transition-all w-16"
+              >
+                <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-650 dark:text-zinc-350 flex items-center justify-center shadow-xs">
+                  {shareCopied ? <Check size={16} className="text-green-500" strokeWidth={2.5} /> : <Link size={16} strokeWidth={2.3} />}
+                </div>
+                <span className="text-[10px] font-bold text-zinc-650 dark:text-zinc-400 font-sans">
+                  {shareCopied ? "복사 완료" : "링크 복사"}
+                </span>
+              </button>
+            </div>
+          </>
+        )}
+      </div>
 
       {/* 5. Premium Glassmorphism Settings Modal */}
       {showSettings && (
