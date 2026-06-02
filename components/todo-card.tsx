@@ -26,6 +26,27 @@ const getFirstDayOfMonth = (year: number, month: number) => {
   return new Date(year, month, 1).getDay();
 };
 
+const getDDayInfo = (dueDateStr?: string) => {
+  if (!dueDateStr) return null;
+  const targetDate = new Date(dueDateStr);
+  if (isNaN(targetDate.getTime())) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  targetDate.setHours(0, 0, 0, 0);
+
+  const diffTime = targetDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return { text: "D-Day", isUrgent: true };
+  } else if (diffDays > 0) {
+    return { text: `D-${diffDays}`, isUrgent: false };
+  } else {
+    return { text: `D+${Math.abs(diffDays)}`, isUrgent: true };
+  }
+};
+
 export function TodoCard({
   todo,
   onToggle,
@@ -325,6 +346,23 @@ export function TodoCard({
           {todo.text}
         </span>
       )}
+
+      {/* 4.5 D-Day Badge for Account Transfer (Fixed Expense) */}
+      {(() => {
+        const ddayInfo = todo.fixedExpenseId ? getDDayInfo(todo.dueDate) : null;
+        if (!ddayInfo) return null;
+        return (
+          <div className={`
+            shrink-0 text-[10px] font-extrabold px-2 py-0.5 rounded-md font-sans select-none border tracking-wider transition-all duration-150
+            ${ddayInfo.isUrgent
+              ? "bg-red-50 dark:bg-red-950/20 text-red-500 border-red-200/50 dark:border-red-900/30 shadow-[0_0_8px_rgba(239,68,68,0.1)]"
+              : "bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 border-indigo-200/50 dark:border-indigo-900/30"
+            }
+          `}>
+            {ddayInfo.text}
+          </div>
+        );
+      })()}
 
       {/* 5. Action Buttons (Edit & Delete) */}
       <div className="card-actions flex gap-1 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
