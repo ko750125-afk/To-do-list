@@ -11,6 +11,7 @@ export interface Todo {
   createdAt: string;
   today: boolean; // 오늘 할 일 여부
   dueDate?: string; // 지정된 기한 날짜 (format: YYYY-MM-DD)
+  fixedExpenseId?: string; // 고정비 고유 ID
 }
 
 export interface FixedExpense {
@@ -183,27 +184,33 @@ export function useTodos() {
 
     const targetMonthKey = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}`;
 
-    // 이미 이번 달(혹은 타겟 달)에 생성 완료했다면 스킵
-    if (lastGeneratedMonth === targetMonthKey) return;
+    // 등록 대상 중 이미 할 일 목록에 매핑된 동일 고정비가 없는 항목만 필터링하여 생성
+    const newTodosToAdd: Todo[] = fixedExpenses
+      .filter((expense) => {
+        // 동일한 고정비 ID를 가졌고, 기한일이 해당 타겟 월로 시작하는 투두가 이미 존재하면 중복 생성 스킵
+        const isAlreadyCreated = todos.some(
+          (todo) => todo.fixedExpenseId === expense.id && todo.dueDate?.startsWith(targetMonthKey)
+        );
+        return !isAlreadyCreated;
+      })
+      .map((expense) => {
+        // 타겟 달의 실제 최대 일자 구하기 (31일 지정인데 해당 월이 30일까지인 경우 보정)
+        const maxDayInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+        const targetDay = Math.min(expense.day, maxDayInTargetMonth);
 
-    // 등록 대상 고정비를 할일 카드로 전환
-    const newTodosToAdd: Todo[] = fixedExpenses.map((expense) => {
-      // 타겟 달의 실제 최대 일자 구하기 (31일 지정인데 해당 월이 30일까지인 경우 보정)
-      const maxDayInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-      const targetDay = Math.min(expense.day, maxDayInTargetMonth);
+        const dueDateString = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
+        const amountText = expense.amount !== null ? ` [${expense.amount.toLocaleString()}원]` : "";
 
-      const dueDateString = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
-      const amountText = expense.amount !== null ? ` [${expense.amount.toLocaleString()}원]` : "";
-
-      return {
-        id: `fixed-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-        text: `[고정비] ${expense.text}${amountText}`,
-        done: false,
-        createdAt: new Date().toISOString(),
-        today: false, // 나중에 할 일 목록으로 기본 등록 (필요시 끌어다 놓기 가능)
-        dueDate: dueDateString,
-      };
-    });
+        return {
+          id: `fixed-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+          text: `[고정비] ${expense.text}${amountText}`,
+          done: false,
+          createdAt: new Date().toISOString(),
+          today: false, // 나중에 할 일 목록으로 기본 등록 (필요시 끌어다 놓기 가능)
+          dueDate: dueDateString,
+          fixedExpenseId: expense.id,
+        };
+      });
 
     if (newTodosToAdd.length > 0) {
       const updatedTodos = [...todos, ...newTodosToAdd];
