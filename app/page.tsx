@@ -126,8 +126,13 @@ export default function Home() {
       if (a.dueDate) return -1;
       if (b.dueDate) return 1;
       
-      // 2. 기한이 없는 일반 항목끼리는 생성일 순 오름차순
-      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      // 2. 기한이 없는 일반 항목끼리는 생성일 순 오름차순 (NaN 방지 방어 연산)
+      const timeA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const timeB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      const valA = isNaN(timeA) ? 0 : timeA;
+      const valB = isNaN(timeB) ? 0 : timeB;
+      
+      return valA - valB;
     });
   };
 

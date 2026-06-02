@@ -190,7 +190,7 @@ export function TodoCard({
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm("정말 이 할 일을 삭제하시겠습니까?")) {
+    if (window.confirm("정말 이 할 일을 삭제하시겠습니까?")) {
       onDelete(todo.id);
     }
   };
@@ -374,10 +374,13 @@ export function TodoCard({
         })()}
 
         {/* 5. Action Buttons (Edit & Delete) */}
-        <div className="card-actions flex gap-1 items-center opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
+        <div className="card-actions flex gap-1 items-center opacity-100 md:opacity-0 md:group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150">
           {!isEditing && (
             <button
               onClick={() => setIsEditing(true)}
+              draggable={false}
+              onDragStart={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
               aria-label={`${todo.text} 수정`}
               className="p-1.5 rounded-lg text-zinc-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
             >
@@ -386,6 +389,9 @@ export function TodoCard({
           )}
           <button
             onClick={handleDeleteClick}
+            draggable={false}
+            onDragStart={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
             aria-label={`${todo.text} 삭제`}
             className="p-1.5 rounded-lg text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
           >
