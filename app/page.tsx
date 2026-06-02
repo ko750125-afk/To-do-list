@@ -136,8 +136,8 @@ export default function Home() {
     });
   };
 
-  const todayTodos = sortTodosByDueDate(todos.filter(t => t.today));
-  const laterTodos = sortTodosByDueDate(todos.filter(t => !t.today));
+  const manualTodos = sortTodosByDueDate(todos.filter(t => !t.fixedExpenseId));
+  const autoTransferTodos = sortTodosByDueDate(todos.filter(t => !!t.fixedExpenseId));
 
   return (
     <main className="flex-1 w-full max-w-lg mx-auto px-4 py-12 md:py-16 flex flex-col gap-6 relative">
@@ -194,62 +194,50 @@ export default function Home() {
       {/* 3. Todo List */}
       {hasActiveTodos ? (
         <div className="flex flex-col gap-1">
-          {/* 오늘 할 일 영역 */}
-          <ul className="flex flex-col gap-2.5 min-h-[10px]">
-            {todayTodos.map((todo) => (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                onToggle={toggleTodo}
-                onDelete={deleteTodo}
-                onUpdate={updateTodo}
-                onUpdateDate={setTodoDueDate}
-                onDragStart={handleDragStart}
-                onDragEnter={handleDragEnter}
-                onDragEnd={handleDragEnd}
-                isDragging={draggingId === todo.id}
-              />
-            ))}
-            {todayTodos.length === 0 && (
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDragEnter={() => {
-                  if (draggingId) setTodoToday(draggingId, true);
-                }}
-                className="h-10 border border-dashed border-zinc-100 dark:border-zinc-800/40 rounded-xl transition-all"
-              />
-            )}
-          </ul>
+          {/* 수동 할 일 영역 */}
+          {manualTodos.length > 0 && (
+            <ul className="flex flex-col gap-2.5 min-h-[10px]">
+              {manualTodos.map((todo) => (
+                <TodoCard
+                  key={todo.id}
+                  todo={todo}
+                  onToggle={toggleTodo}
+                  onDelete={deleteTodo}
+                  onUpdate={updateTodo}
+                  onUpdateDate={setTodoDueDate}
+                  onDragStart={handleDragStart}
+                  onDragEnter={handleDragEnter}
+                  onDragEnd={handleDragEnd}
+                  isDragging={draggingId === todo.id}
+                />
+              ))}
+            </ul>
+          )}
 
-          {/* 고정된 보라색 가로 구분선 */}
-          <div className="my-5 h-[2px] bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.4)] dark:shadow-[0_0_10px_rgba(168,85,247,0.2)]" />
+          {/* 구분선: 수동 할 일과 자동 계좌이체 항목이 모두 있을 때만 표시 */}
+          {manualTodos.length > 0 && autoTransferTodos.length > 0 && (
+            <div className="my-5 h-[2px] bg-gradient-to-r from-purple-500 via-indigo-500 to-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.4)] dark:shadow-[0_0_10px_rgba(168,85,247,0.2)]" />
+          )}
 
-          {/* 나중에 처리할 일 영역 */}
-          <ul className="flex flex-col gap-2.5 min-h-[10px]">
-            {laterTodos.map((todo) => (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                onToggle={toggleTodo}
-                onDelete={deleteTodo}
-                onUpdate={updateTodo}
-                onUpdateDate={setTodoDueDate}
-                onDragStart={handleDragStart}
-                onDragEnter={handleDragEnter}
-                onDragEnd={handleDragEnd}
-                isDragging={draggingId === todo.id}
-              />
-            ))}
-            {laterTodos.length === 0 && (
-              <div
-                onDragOver={(e) => e.preventDefault()}
-                onDragEnter={() => {
-                  if (draggingId) setTodoToday(draggingId, false);
-                }}
-                className="h-10 border border-dashed border-zinc-100 dark:border-zinc-800/40 rounded-xl transition-all"
-              />
-            )}
-          </ul>
+          {/* 자동 계좌이체 영역 */}
+          {autoTransferTodos.length > 0 && (
+            <ul className="flex flex-col gap-2.5 min-h-[10px]">
+              {autoTransferTodos.map((todo) => (
+                <TodoCard
+                  key={todo.id}
+                  todo={todo}
+                  onToggle={toggleTodo}
+                  onDelete={deleteTodo}
+                  onUpdate={updateTodo}
+                  onUpdateDate={setTodoDueDate}
+                  onDragStart={handleDragStart}
+                  onDragEnter={handleDragEnter}
+                  onDragEnd={handleDragEnd}
+                  isDragging={draggingId === todo.id}
+                />
+              ))}
+            </ul>
+          )}
         </div>
       ) : (
         /* Empty State */
