@@ -133,9 +133,10 @@ export function useTodos() {
 
   // 3.5 고정비 데이터 영속성 유지
   const saveFixedExpenses = useCallback((newExpenses: FixedExpense[]) => {
-    setFixedExpenses(newExpenses);
+    const sortedExpenses = [...newExpenses].sort((a, b) => a.day - b.day);
+    setFixedExpenses(sortedExpenses);
     try {
-      localStorage.setItem("fixed_expenses", JSON.stringify(newExpenses));
+      localStorage.setItem("fixed_expenses", JSON.stringify(sortedExpenses));
     } catch (e) {
       console.error("[Storage] Failed to save fixed expenses:", e);
     }
@@ -145,7 +146,7 @@ export function useTodos() {
       setDoc(
         docRef,
         {
-          fixedExpenses: newExpenses,
+          fixedExpenses: sortedExpenses,
           updatedAt: new Date().toISOString(),
         },
         { merge: true }
