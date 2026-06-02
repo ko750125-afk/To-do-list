@@ -292,7 +292,7 @@ export default function Home() {
                     : "border-transparent text-zinc-450 dark:text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
                 }`}
               >
-                고정비/고정입금 설정
+                계좌이체 설정
               </button>
               <button
                 onClick={() => setActiveTab("sync")}
@@ -315,13 +315,13 @@ export default function Home() {
                   <div className="bg-indigo-50/50 dark:bg-indigo-950/10 border border-indigo-100/50 dark:border-indigo-900/20 rounded-xl p-3.5 flex gap-2.5">
                     <Sparkles size={15} className="text-indigo-500 shrink-0 mt-0.5" />
                     <p className="text-[11px] leading-relaxed text-indigo-700 dark:text-indigo-350">
-                      매월 말일이 되면, 아래에 설정한 모든 고정입금 항목이 **다음 달의 할 일 목록**으로 자동 등록됩니다. 등록일이 지나 앱을 열어도 누락 없이 똑같이 자동 생성됩니다.
+                      매월 말일이 되면, 아래에 설정한 모든 계좌이체 항목이 **다음 달의 할 일 목록**으로 자동 등록됩니다. 등록일이 지나 앱을 열어도 누락 없이 똑같이 자동 생성됩니다.
                     </p>
                   </div>
 
                   {/* 고정비 추가 Form */}
                   <div className="flex flex-col gap-2.5 p-3.5 bg-zinc-50/60 dark:bg-zinc-950/20 border border-zinc-150 dark:border-zinc-850 rounded-xl">
-                    <span className="text-[10px] font-bold text-zinc-750 dark:text-zinc-350 uppercase tracking-wider">신규 고정비 항목 등록</span>
+                    <span className="text-[10px] font-bold text-zinc-750 dark:text-zinc-350 uppercase tracking-wider">신규 계좌이체 항목 등록</span>
                     <div className="flex flex-col gap-2">
                       <input
                         type="text"
@@ -362,7 +362,7 @@ export default function Home() {
                         disabled={!expenseText.trim()}
                         className="w-full py-2 bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-50 dark:hover:bg-zinc-200 text-white dark:text-zinc-950 font-bold text-xs rounded-xl active:scale-98 transition-all disabled:opacity-40 cursor-pointer mt-1"
                       >
-                        고정비 등록
+                        계좌이체 등록
                       </button>
                     </div>
                   </div>
@@ -394,7 +394,7 @@ export default function Home() {
                       </div>
                     ) : (
                       <div className="py-8 text-center border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl">
-                        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 font-bold">등록된 고정비 항목이 없습니다.</p>
+                        <p className="text-[11px] text-zinc-400 dark:text-zinc-500 font-bold">등록된 계좌이체 항목이 없습니다.</p>
                       </div>
                     )}
                   </div>

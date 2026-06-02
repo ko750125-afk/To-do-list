@@ -317,7 +317,7 @@ export function TodoCard({
         />
       ) : (
         <span
-          className={`flex-1 text-sm font-medium break-all pr-2 select-text leading-relaxed transition-all duration-200
+          className={`flex-1 text-sm font-medium whitespace-pre-line break-all pr-2 select-text leading-relaxed transition-all duration-200
             ${todo.done ? "line-through text-zinc-400 dark:text-zinc-600" : "text-zinc-800 dark:text-zinc-200"}
           `}
           onDoubleClick={() => setIsEditing(true)}

@@ -199,11 +199,11 @@ export function useTodos() {
         const targetDay = Math.min(expense.day, maxDayInTargetMonth);
 
         const dueDateString = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
-        const amountText = expense.amount !== null ? ` [${expense.amount.toLocaleString()}원]` : "";
+        const amountText = expense.amount !== null ? `\n${expense.amount.toLocaleString()}원` : "";
 
         return {
           id: `fixed-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-          text: `[고정비] ${expense.text}${amountText}`,
+          text: `[계좌이체]${expense.text}${amountText}`,
           done: false,
           createdAt: new Date().toISOString(),
           today: false, // 나중에 할 일 목록으로 기본 등록 (필요시 끌어다 놓기 가능)
