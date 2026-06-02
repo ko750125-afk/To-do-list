@@ -47,7 +47,7 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [activeTab, setActiveTab] = useState<"expenses" | "sync">("expenses");
 
-  // 고정비 등록 폼 입력 상태
+  // 계좌이체 등록 폼 입력 상태
   const [expenseText, setExpenseText] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDay, setExpenseDay] = useState("");
@@ -116,9 +116,23 @@ export default function Home() {
   // 실질적인 할 일 갯수 파악
   const hasActiveTodos = todos.length > 0;
 
-  // 오늘 할 일과 나중 일을 필터링하여 분리
-  const todayTodos = todos.filter(t => t.today);
-  const laterTodos = todos.filter(t => !t.today);
+  // 오늘 할 일과 나중 일을 필터링 및 날짜 기준 정렬
+  const sortTodosByDueDate = (todoList: typeof todos) => {
+    return [...todoList].sort((a, b) => {
+      // 1. 기한(dueDate)이 있는 항목을 기한이 없는 일반 항목보다 위에 우선 배치
+      if (a.dueDate && b.dueDate) {
+        return a.dueDate.localeCompare(b.dueDate);
+      }
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      
+      // 2. 기한이 없는 일반 항목끼리는 생성일 순 오름차순
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    });
+  };
+
+  const todayTodos = sortTodosByDueDate(todos.filter(t => t.today));
+  const laterTodos = sortTodosByDueDate(todos.filter(t => !t.today));
 
   return (
     <main className="flex-1 w-full max-w-lg mx-auto px-4 py-12 md:py-16 flex flex-col gap-6 relative">
@@ -434,7 +448,7 @@ export default function Home() {
                       </div>
 
                       <p className="text-[11px] leading-relaxed text-zinc-450 dark:text-zinc-500">
-                        스마트폰이나 다른 기기에서 본 대시보드(설정 ➡️ 모바일 기기 연동)를 연 뒤, 위 **6자리 연동 코드**를 입력하면 동일한 할일 목록과 고정비가 기기 간에 완벽히 동기화됩니다.
+                        스마트폰이나 다른 기기에서 본 대시보드(설정 ➡️ 모바일 기기 연동)를 연 뒤, 위 **6자리 연동 코드**를 입력하면 동일한 할일 목록과 계좌이체 항목이 기기 간에 완벽히 동기화됩니다.
                       </p>
 
                       <div className="flex justify-end pt-2 border-t border-zinc-150 dark:border-zinc-850 mt-1">
@@ -457,7 +471,7 @@ export default function Home() {
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">신규 기기 연동 코드 발급</span>
                         <p className="text-[11px] text-zinc-450 dark:text-zinc-500 leading-relaxed">
-                          새 연결 채널을 발급하여 스마트폰 앱이나 다른 스마트 기기와 투두 및 고정비 데이터를 실시간으로 완벽 연동합니다.
+                          새 연결 채널을 발급하여 스마트폰 앱이나 다른 스마트 기기와 투두 및 계좌이체 데이터를 실시간으로 완벽 연동합니다.
                         </p>
                         <button
                           onClick={generateSyncCode}
@@ -482,7 +496,7 @@ export default function Home() {
                       <div className="flex flex-col gap-1">
                         <span className="text-xs font-bold text-zinc-700 dark:text-zinc-300">기존 기기 코드와 연결</span>
                         <p className="text-[11px] text-zinc-450 dark:text-zinc-500 leading-relaxed">
-                          다른 스마트폰이나 PC 화면에 노출된 6자리 연동 코드를 입력하여 할 일 및 고정비 목록을 실시간 동기화합니다.
+                          다른 스마트폰이나 PC 화면에 노출된 6자리 연동 코드를 입력하여 할 일 및 계좌이체 목록을 실시간 동기화합니다.
                         </p>
                         <div className="flex gap-2 mt-2.5">
                           <input
