@@ -384,7 +384,11 @@ export default function Home() {
                               </span>
                             </div>
                             <button
-                              onClick={() => deleteFixedExpense(expense.id)}
+                              onClick={() => {
+                                if (confirm(`"${expense.text}" 계좌이체 항목을 정말 삭제하시겠습니까?`)) {
+                                  deleteFixedExpense(expense.id);
+                                }
+                              }}
                               className="px-2 py-1 text-[10px] font-bold text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-lg cursor-pointer transition-colors"
                             >
                               삭제
