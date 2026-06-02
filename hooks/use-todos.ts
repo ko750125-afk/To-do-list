@@ -185,44 +185,58 @@ export function useTodos() {
 
     const targetMonthKey = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}`;
 
-    // 등록 대상 중 이미 할 일 목록에 매핑된 동일 고정비가 없는 항목만 필터링하여 생성
-    const newTodosToAdd: Todo[] = fixedExpenses
-      .filter((expense) => {
-        // 동일한 고정비 ID를 가졌고, 기한일이 해당 타겟 월로 시작하는 투두가 이미 존재하면 중복 생성 스킵
-        const isAlreadyCreated = todos.some(
-          (todo) => todo.fixedExpenseId === expense.id && todo.dueDate?.startsWith(targetMonthKey)
-        );
-        return !isAlreadyCreated;
-      })
-      .map((expense) => {
-        // 타겟 달의 실제 최대 일자 구하기 (31일 지정인데 해당 월이 30일까지인 경우 보정)
-        const maxDayInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
-        const targetDay = Math.min(expense.day, maxDayInTargetMonth);
+    let updatedTodos: Todo[] = [];
+    let hasChanges = false;
 
-        const dueDateString = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
-        const amountText = expense.amount !== null ? `\n${expense.amount.toLocaleString()}원` : "";
+    // 함수형 업데이트를 사용하여 최신 todos(prev)를 기반으로 중복 검사 및 추가 처리
+    setTodos((prev) => {
+      // 등록 대상 중 이미 할 일 목록에 매핑된 동일 고정비가 없는 항목만 필터링하여 생성
+      const newTodosToAdd: Todo[] = fixedExpenses
+        .filter((expense) => {
+          // 동일한 고정비 ID를 가졌고, 기한일이 해당 타겟 월로 시작하는 투두가 이미 존재하면 중복 생성 스킵
+          const isAlreadyCreated = prev.some(
+            (todo) => todo.fixedExpenseId === expense.id && todo.dueDate?.startsWith(targetMonthKey)
+          );
+          return !isAlreadyCreated;
+        })
+        .map((expense) => {
+          // 타겟 달의 실제 최대 일자 구하기 (31일 지정인데 해당 월이 30일까지인 경우 보정)
+          const maxDayInTargetMonth = new Date(targetYear, targetMonth + 1, 0).getDate();
+          const targetDay = Math.min(expense.day, maxDayInTargetMonth);
 
-        return {
-          id: `fixed-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-          text: `[계좌이체]${expense.text}${amountText}`,
-          done: false,
-          createdAt: new Date().toISOString(),
-          today: false, // 나중에 할 일 목록으로 기본 등록 (필요시 끌어다 놓기 가능)
-          dueDate: dueDateString,
-          fixedExpenseId: expense.id,
-        };
-      });
+          const dueDateString = `${targetYear}-${String(targetMonth + 1).padStart(2, "0")}-${String(targetDay).padStart(2, "0")}`;
+          const amountText = expense.amount !== null ? `\n${expense.amount.toLocaleString()}원` : "";
 
-    if (newTodosToAdd.length > 0) {
-      const updatedTodos = [...todos, ...newTodosToAdd];
-      
-      // 로컬 상태 갱신
-      setTodos(updatedTodos);
+          return {
+            id: `fixed-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+            text: `[계좌이체]${expense.text}${amountText}`,
+            done: false,
+            createdAt: new Date().toISOString(),
+            today: false, // 나중에 할 일 목록으로 기본 등록 (필요시 끌어다 놓기 가능)
+            dueDate: dueDateString,
+            fixedExpenseId: expense.id,
+          };
+        });
+
+      if (newTodosToAdd.length === 0) {
+        updatedTodos = prev;
+        return prev;
+      }
+
+      updatedTodos = [...prev, ...newTodosToAdd];
+      hasChanges = true;
+      return updatedTodos;
+    });
+
+    // 사이드 이펙트(영속성 보존)는 상태 업데이트 함수 바깥인 useEffect 본문에서 처리
+    if (hasChanges && updatedTodos.length > 0) {
       setLastGeneratedMonth(targetMonthKey);
-
-      // 로컬 스토리지 보존
-      localStorage.setItem("todos", JSON.stringify(updatedTodos));
-      localStorage.setItem("last_generated_month", targetMonthKey);
+      try {
+        localStorage.setItem("todos", JSON.stringify(updatedTodos));
+        localStorage.setItem("last_generated_month", targetMonthKey);
+      } catch (e) {
+        console.error("[Storage] Failed to save auto generated todos:", e);
+      }
 
       // 클라우드 동기화 갱신
       if (syncCode) {
@@ -240,7 +254,7 @@ export function useTodos() {
         });
       }
     }
-  }, [isMounted, todos, fixedExpenses, lastGeneratedMonth, syncCode]);
+  }, [isMounted, fixedExpenses, lastGeneratedMonth, syncCode]);
 
   // 5. 기기 간 연동 비즈니스 로직
 
